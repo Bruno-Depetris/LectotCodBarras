@@ -3,27 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Lector de códigos de barras</title>
     
 </head>
 <body>
     
-    <h1>Lector Codigo barras</h1>
+    <main>
+    <h1>Lector de códigos de barras</h1>
 
     <div class="div_general">
         <div class="div_estado_conexion">
-            <p>pagina de pruebas</p>
+            <p id="estado" aria-live="polite">Pulsa «Iniciar cámara» para comenzar.</p>
         </div>
+
+        <label for="camaraSeleccionada">Cámara</label>
         
+        <select id="camaraSeleccionada" disabled>
+            <option value="">Cámara predeterminada</option>
+        </select>
+
         <div class="div_camara">
-            <video id="camara" autoplay playsinline></video>
+            <video id="camara" autoplay muted playsinline></video>
         </div>
 
-        <p id="resultado"></p>
+        <p>Resultado: <output id="resultado" aria-live="assertive">Todavía no se ha leído ningún código.</output></p>
 
 
-            <button onclick="">Enviar</button>
+            <button id="iniciar" type="button">Iniciar cámara</button>
+            <button id="detener" type="button" disabled>Detener</button>
+            <button id="limpiar" type="button">Limpiar resultado</button>
     </div>
+            </main>
 </body>
 <script type="module" src="./script.js"></script>
 </html>
