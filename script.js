@@ -1,92 +1,80 @@
+import { BrowserMultiFormatReader } from
+    "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/+esm";
+import { BarcodeFormat, DecodeHintType } from
+    "https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/+esm";
+
 const video = document.getElementById("camara");
 const resultado = document.getElementById("resultado");
 const estado = document.getElementById("estado");
 const botonIniciar = document.getElementById("botonIniciar");
 const botonDetener = document.getElementById("botonDetener");
 
-let detector = null;
-let imagenes = null;
-let camaraActiva = false;
+const formatos = [
+    BarcodeFormat.CODE_128,
+    BarcodeFormat.CODE_39,
+    BarcodeFormat.CODE_93,
+    BarcodeFormat.EAN_13,
+    BarcodeFormat.EAN_8,
+    BarcodeFormat.UPC_A,
+    BarcodeFormat.UPC_E,
+    BarcodeFormat.ITF,
+    BarcodeFormat.CODABAR
+];
+
+const pistas = new Map();
+pistas.set(DecodeHintType.POSSIBLE_FORMATS, formatos);
+
+const lector = new BrowserMultiFormatReader(pistas, 150);
+let controles = null;
 let ultimoCodigo = "";
-let ultimaLectura = 0;
 let audio = null;
 
-async function iniciarLector() {
-    if (!("BarcodeDetector" in window)) {
-        estado.textContent = "Tu navegador no es compatible con BarcodeDetector.";
-        return;
-    }
+function iniciarLector() {
+    estado.textContent = "Pidiendo permiso para usar la cámara...";
+    crearSonido();
 
-    try {
-        estado.textContent = "Pidiendo permiso para usar la cámara...";
-
-        const transmision = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
+    lector.decodeFromConstraints(
+        {
+            video: {
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 15, max: 24 }
+            },
             audio: false
-        });
-
-        video.srcObject = transmision;
-        await video.play();
-
-        detector = new BarcodeDetector();
-        camaraActiva = true;
-        ultimoCodigo = "";
-        crearSonido();
-
-        botonIniciar.disabled = true;
-        botonDetener.disabled = false;
-        estado.textContent = "Apunta la cámara al código de barras.";
-
-        buscarCodigo();
-    } catch (error) {
-        mostrarError(error);
-    }
-}
-
-async function buscarCodigo() {
-    if (!camaraActiva) {
-        return;
-    }
-
-    try {
-        const codigos = await detector.detect(video);
-
-        if (codigos.length > 0) {
-            const codigo = codigos[0].rawValue;
-            const ahora = Date.now();
-
-            if (codigo !== ultimoCodigo || ahora - ultimaLectura > 2000) {
-                resultado.textContent = codigo;
+        },
+        video,
+        function (codigo) {
+            if (codigo && codigo.getText() !== ultimoCodigo) {
+                resultado.textContent = codigo.getText();
                 estado.textContent = "Código encontrado.";
                 emitirSonido();
-                ultimoCodigo = codigo;
-                ultimaLectura = ahora;
+                ultimoCodigo = codigo.getText();
             }
         }
-    } catch (error) {
-        console.error("Error leyendo el código:", error);
-    }
-
-    imagenes = requestAnimationFrame(buscarCodigo);
+    )
+        .then(function (resultadoControles) {
+            controles = resultadoControles;
+            botonIniciar.disabled = true;
+            botonDetener.disabled = false;
+            estado.textContent = "Apunta la cámara al código de barras.";
+        })
+        .catch(function (error) {
+            mostrarError(error);
+        });
 }
 
 function detenerLector() {
-    camaraActiva = false;
-
-    if (imagenes) {
-        cancelAnimationFrame(imagenes);
-        imagenes = null;
+    if (controles) {
+        controles.stop();
+        controles = null;
     }
 
-    if (video.srcObject) {
-        video.srcObject.getTracks().forEach(function (pista) {
-            pista.stop();
-        });
-        video.srcObject = null;
-    }
-
+    lector.reset();
+    video.srcObject = null;
     botonIniciar.disabled = false;
     botonDetener.disabled = true;
+    ultimoCodigo = "";
     estado.textContent = "Cámara detenida.";
 }
 
@@ -103,7 +91,6 @@ function emitirSonido() {
     volumen.gain.value = 0.15;
     oscilador.connect(volumen);
     volumen.connect(audio.destination);
-
     oscilador.start();
     oscilador.stop(audio.currentTime + 0.15);
 }
