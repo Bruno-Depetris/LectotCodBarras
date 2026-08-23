@@ -8,6 +8,12 @@ const resultado = document.getElementById("resultado");
 const estado = document.getElementById("estado");
 const botonIniciar = document.getElementById("botonIniciar");
 const botonDetener = document.getElementById("botonDetener");
+const campoSesion = document.getElementById("campoSesion");
+const botonEnviar = document.getElementById("botonEnviar");
+const estadoEnvio = document.getElementById("estadoEnvio");
+
+const API_POR_DEFECTO = "https://mandiraapirest.up.railway.app";
+const CLAVE_SESION = "mandira.lector.sesion";
 
 const formatos = [
     BarcodeFormat.CODE_128,
@@ -27,6 +33,7 @@ pistas.set(DecodeHintType.POSSIBLE_FORMATS, formatos);
 const lector = new BrowserMultiFormatReader(pistas, 150);
 let controles = null;
 let ultimoCodigo = "";
+let codigoParaEnviar = "";
 let audio = null;
 
 function iniciarLector() {
@@ -50,6 +57,8 @@ function iniciarLector() {
                 estado.textContent = "Código encontrado.";
                 emitirSonido();
                 ultimoCodigo = codigo.getText();
+                codigoParaEnviar = ultimoCodigo;
+                habilitarEnvio();
             }
         }
     )
@@ -84,6 +93,10 @@ function crearSonido() {
 }
 
 function emitirSonido() {
+    if (!audio) {
+        return;
+    }
+
     const oscilador = audio.createOscillator();
     const volumen = audio.createGain();
 
@@ -106,5 +119,106 @@ function mostrarError(error) {
     estado.textContent = "No se pudo iniciar la cámara.";
 }
 
+function obtenerApiUrl() {
+    const parametros = new URLSearchParams(window.location.search);
+    const desdeUrl = parametros.get("api");
+
+    if (desdeUrl) {
+        return desdeUrl.replace(/\/+$/, "");
+    }
+
+    return API_POR_DEFECTO;
+}
+
+function recuperarSesionGuardada() {
+    const parametros = new URLSearchParams(window.location.search);
+    const desdeUrl = parametros.get("sesion");
+
+    if (desdeUrl) {
+        campoSesion.value = desdeUrl.trim();
+        guardarSesion();
+        return;
+    }
+
+    try {
+        const guardada = localStorage.getItem(CLAVE_SESION);
+
+        if (guardada) {
+            campoSesion.value = guardada;
+        }
+    } catch (error) {
+        console.warn("No se pudo leer la sesion guardada:", error);
+    }
+}
+
+function guardarSesion() {
+    try {
+        localStorage.setItem(CLAVE_SESION, campoSesion.value.trim());
+    } catch (error) {
+        console.warn("No se pudo guardar la sesion:", error);
+    }
+}
+
+function habilitarEnvio() {
+    const hayCodigo = codigoParaEnviar !== "";
+    const haySesion = campoSesion.value.trim() !== "";
+
+    botonEnviar.disabled = !hayCodigo || !haySesion;
+}
+
+function mostrarEstadoEnvio(mensaje, clase) {
+    estadoEnvio.textContent = mensaje;
+    estadoEnvio.className = "estado_envio " + clase;
+}
+
+function enviarAlPanel() {
+    const sesion = campoSesion.value.trim();
+
+    if (codigoParaEnviar === "" || sesion === "") {
+        return;
+    }
+
+    botonEnviar.disabled = true;
+    mostrarEstadoEnvio("Enviando...", "");
+
+    fetch(obtenerApiUrl() + "/api/Escaneos/" + encodeURIComponent(sesion), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo: codigoParaEnviar })
+    })
+        .then(function (respuesta) {
+            if (respuesta.ok) {
+                mostrarEstadoEnvio("Enviado a la sesion " + sesion + ".", "ok");
+                emitirSonido();
+                return;
+            }
+
+            return respuesta.json()
+                .catch(function () {
+                    return null;
+                })
+                .then(function (datos) {
+                    const detalle = datos && datos.detail ? datos.detail : "estado " + respuesta.status;
+                    mostrarEstadoEnvio("No se pudo enviar: " + detalle, "mal");
+                });
+        })
+        .catch(function (error) {
+            console.error("Fallo el envio:", error);
+            mostrarEstadoEnvio("No se pudo contactar la API.", "mal");
+        })
+        .then(function () {
+            habilitarEnvio();
+        });
+}
+
+campoSesion.addEventListener("input", function () {
+    guardarSesion();
+    habilitarEnvio();
+});
+
+botonEnviar.addEventListener("click", enviarAlPanel);
 botonIniciar.addEventListener("click", iniciarLector);
 botonDetener.addEventListener("click", detenerLector);
+
+recuperarSesionGuardada();
+habilitarEnvio();

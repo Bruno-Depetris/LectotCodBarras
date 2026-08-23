@@ -24,6 +24,18 @@
 
         <button id="botonIniciar" type="button">Iniciar</button>
         <button id="botonDetener" type="button" disabled>Detener</button>
+
+        <div class="div_envio">
+            <label for="campoSesion">Sesion del panel</label>
+            <input id="campoSesion" type="text" inputmode="latin" autocomplete="off"
+                   placeholder="Ej: K7RQ2" maxlength="32">
+            <p class="ayuda_envio">
+                Escribí la sesion que muestra el panel de administracion en Configuracion.
+            </p>
+
+            <button id="botonEnviar" type="button" disabled>Enviar al panel</button>
+            <p id="estadoEnvio" class="estado_envio"></p>
+        </div>
     </div>
 </body>
 <script type="module" src="./script.js"></script>

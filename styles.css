@@ -141,6 +141,80 @@ button:focus-visible {
     outline-offset: 2px;
 }
 
+.div_envio {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #d5e1dc;
+}
+
+.div_envio label {
+    display: block;
+    margin-bottom: 6px;
+    color: #142b27;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+#campoSesion {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid #b9c7c2;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #142b27;
+    font: inherit;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+#campoSesion:focus-visible {
+    border-color: #19735c;
+    outline: 2px solid #d59d25;
+    outline-offset: 2px;
+}
+
+.ayuda_envio {
+    margin: 6px 2px 12px;
+    color: #5d746d;
+    font-size: 0.86rem;
+    line-height: 1.35;
+}
+
+#botonEnviar {
+    width: 100%;
+    margin-right: 0;
+    border-color: #1d5f8a;
+    background: #1d5f8a;
+}
+
+#botonEnviar:hover:not(:disabled) {
+    border-color: #164b6d;
+    background: #164b6d;
+}
+
+.estado_envio {
+    margin: 10px 2px 0;
+    font-size: 0.9rem;
+    line-height: 1.35;
+}
+
+.estado_envio:empty {
+    display: none;
+}
+
+.estado_envio.ok {
+    color: #19735c;
+    font-weight: 700;
+}
+
+.estado_envio.mal {
+    color: #a63d40;
+    font-weight: 700;
+}
+
 @media (min-width: 700px) {
     body {
         padding-top: 56px;
